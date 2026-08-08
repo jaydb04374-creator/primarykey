@@ -1,0 +1,17 @@
+version: 2
+
+sources:
+  - name: test1_bronze
+    database: dev
+    schema: test1_bronze
+    tables:
+      - name: customers
+        description: Raw customer records landed in bronze. Source system only supports inserts, so a given person (identified by SSN) may appear multiple times with an increasing custid.
+        columns:
+          - name: custid
+            tests:
+              - not_null
+          - name: SSN
+            description: Natural key used to identify a customer across multiple bronze inserts.
+            tests:
+              - not_null

@@ -1,0 +1,24 @@
+version: 2
+
+models:
+  - name: cust_silv
+    description: SCD Type 1 silver customer table. Deduplicated from bronze by SSN (natural key), keeping the record with the highest custid.
+    columns:
+      - name: custid
+        tests:
+          - not_null
+          - unique
+      - name: SSN
+        tests:
+          - not_null
+          - unique
+      - name: fname
+        tests:
+          - not_null
+      - name: lname
+        tests:
+          - not_null
+      - name: email
+        tests:
+          - not_null
+          - unique

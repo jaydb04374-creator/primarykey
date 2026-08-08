@@ -1,0 +1,18 @@
+
+
+
+
+
+# Copy to ~/.dbt/profiles.yml and fill in your workspace details,
+# or export the env vars referenced below.
+primary_key_pipeline:
+  target: dev
+  outputs:
+    dev:
+      type: databricks
+      catalog: dev
+      schema: test1_silver
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      threads: 4

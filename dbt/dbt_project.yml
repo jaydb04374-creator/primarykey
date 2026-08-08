@@ -1,0 +1,21 @@
+name: 'primary_key_pipeline'
+version: '1.0.0'
+config-version: 2
+
+profile: 'primary_key_pipeline'
+
+model-paths: ["models"]
+macro-paths: ["macros"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+
+target-path: "target"
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+models:
+  primary_key_pipeline:
+    marts:
+      +materialized: incremental
+      +file_format: delta
