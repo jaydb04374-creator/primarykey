@@ -22,3 +22,28 @@ models:
         tests:
           - not_null
           - unique
+
+  - name: cust_dms_silv
+    description: SCD Type 1 silver customer table sourced from DMS CDC bronze. Deduplicated from bronze by SSN (natural key), keeping the record with the latest insert_datetime_bronze.
+    columns:
+      - name: DMS_id
+        tests:
+          - not_null
+          - unique
+      - name: SSN
+        tests:
+          - not_null
+          - unique
+      - name: fname
+        tests:
+          - not_null
+      - name: lname
+        tests:
+          - not_null
+      - name: email
+        tests:
+          - not_null
+          - unique
+      - name: insert_datetime_bronze
+        tests:
+          - not_null

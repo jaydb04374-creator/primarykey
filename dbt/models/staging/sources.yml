@@ -15,3 +15,17 @@ sources:
             description: Natural key used to identify a customer across multiple bronze inserts.
             tests:
               - not_null
+      - name: customers_dms
+        description: Raw customer records landed via DMS CDC. Source system only supports inserts, so a given person (identified by SSN) may appear multiple times; insert_datetime_bronze indicates recency.
+        columns:
+          - name: DMS_id
+            tests:
+              - not_null
+          - name: SSN
+            description: Natural key used to identify a customer across multiple DMS inserts.
+            tests:
+              - not_null
+          - name: insert_datetime_bronze
+            description: Timestamp the record landed in bronze; used to determine the latest version per SSN.
+            tests:
+              - not_null
