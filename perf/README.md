@@ -18,6 +18,13 @@ perf/
     │   └── sf_1000/                            sf1000 runs, explicitly re-verified serverless
     ├── serverless_vs_2xsmall_sf1_comparison.{csv,json}
     └── serverless_vs_2xsmall_sf1000_comparison.{csv,json}
+
+concurrent/
+└── 5users/                                     5 simulated concurrent users, sf1
+    ├── simulate_concurrent_users.py             the simulation script
+    ├── raw_runs.{csv,json}                      all 55 individual run records
+    ├── summary.{csv,json}                       per-query stats (incl. queue_time_ms)
+    └── summary_by_user.{csv,json}               per-user total wall/execution time
 ```
 
 Each `raw_runs.csv`/`.json` holds one row per individual run; `summary.csv`/`.json`
@@ -50,6 +57,12 @@ holds the 5-run averages per query (min/max also included).
   ~1300s) inconsistent with their `execution_time_ms`, most likely polling-subprocess
   overhead on the client side rather than real query behavior. Use `execution_time_ms`
   for all timing analysis, not `wall_clock_s`.
+- **Concurrency test design** (`concurrent/5users/`): 5 Python threads (one per
+  simulated user), each opening its own SQL session against the same warehouse with
+  caching independently disabled, each running the 11-query set once. All threads
+  launched together via a thread pool so query submissions genuinely overlap in time
+  — verified by session-creation and first-query timestamps landing within ~0.06s
+  across all 5 users.
 
 ## Results: sf1 (1GB) vs sf1000 (1TB)
 
@@ -136,6 +149,49 @@ the signature of noise rather than a real effect. `q24b` (sf1, +53%) and `q95`
 warm-up/JIT-compile timing for whichever query happened to run first/cold in a
 session, not the queries themselves changing behavior.
 
+## Results: 5 Concurrent Users (sf1)
+
+To see how the 2X-Small warehouse behaves under load, `concurrent/5users/` simulates
+5 users hitting it at the same time: 5 Python threads, each with its **own SQL
+session** (own `session_id`, cache disabled independently), each running the full
+11-query set once, all launched together via a thread pool. This gives 55 total
+executions with genuine overlap — all 5 users started within 0.06s of each other and
+finished within ~1.4s of each other.
+
+| Query | Sequential (1 user) | Concurrent (5 users, avg) | Slowdown | Avg Queue Time |
+|---|---|---|---|---|
+| q24a | 833ms | 2,907ms | 3.5x | 90.8ms |
+| q24b | 388ms | 1,664ms | 4.3x | 74.4ms |
+| q34 | 1.44s | 5.38s | 3.7x | 27.2ms |
+| q39a | 1.78s | 7.44s | 4.2x | 25.6ms |
+| q39b | 1.52s | 5.51s | 3.6x | 25.2ms |
+| q52 | 694ms | 2.49s | 3.6x | 25.6ms |
+| q64 | 6.92s | 30.15s | 4.4x | 26.0ms |
+| q72 | 3.99s | 9.20s | 2.3x | 24.8ms |
+| q82 | 1.90s | 4.40s | 2.3x | 26.0ms |
+| q95 | 1.78s | 6.27s | 3.5x | 22.0ms |
+| q99 | 955ms | 3.89s | 4.1x | 26.8ms |
+
+### Key finding: contention shows up as slower execution, not queueing
+
+Every single query got **2.3x–4.4x slower** under 5x concurrent load, consistently
+across all 5 users — this is real, not noise. What's notable is *where* the cost
+lands: `queue_time_ms` (time spent waiting for a warehouse slot before execution
+starts) stayed low and flat (22–91ms) regardless of query weight, while
+`execution_time_ms` itself ballooned by 2–4x. In other words, the warehouse doesn't
+make concurrent queries wait in line — it **shares its fixed compute capacity**
+across all of them simultaneously, so each individual query just runs slower rather
+than queueing. Heavier queries (`q24a/b`, `q64`, `q99`, all 3.5x+) felt this more
+than lighter/faster ones (`q72`, `q82`, both 2.3x).
+
+At the per-user level: each user's own 11-query run took ~76–82s of pure execution
+time (summed) but ~134s of wall time — the gap is submission/polling/result-fetch
+overhead under concurrent client load, not warehouse-side delay. No user finished
+meaningfully ahead of or behind the others (max spread ~1.4s across all 5),
+indicating the warehouse spreads capacity fairly rather than favoring earlier
+requests. Zero failures, zero cache hits, zero disk spill across all 55 executions —
+the 2X-Small warehouse degrades gracefully under 5x load rather than failing.
+
 ## Overall takeaways
 
 1. **Selective predicates matter far more than warehouse size at this scale.**
@@ -145,10 +201,15 @@ session, not the queries themselves changing behavior.
    demonstrate that a query which is nearly free at small scale can become the
    single most expensive query in the set once data volume crosses a threshold that
    changes its join strategy.
-3. **No query failed or spilled to disk** across 220 total executions (4 passes ×
-   11 queries × 5 runs) on a 2X-Small warehouse, even at 1TB scale — the workspace's
-   free-tier compute ceiling didn't block correctness, only made the worst-case
-   queries (q24a/q24b) slow.
-4. **This benchmark cannot answer "does serverless outperform classic compute?"**
+3. **No query failed or spilled to disk** across 220 sequential executions (4 passes
+   × 11 queries × 5 runs) on a 2X-Small warehouse, even at 1TB scale — the
+   workspace's free-tier compute ceiling didn't block correctness, only made the
+   worst-case queries (q24a/q24b) slow.
+4. **A 2X-Small warehouse shares compute under concurrent load rather than
+   queueing requests.** 5 concurrent users made every query 2.3x–4.4x slower, with
+   that cost showing up almost entirely in execution time, not in queue wait. For a
+   real multi-user workload on this warehouse size, expect proportionally degraded
+   latency per user under load, not request queueing or failures.
+5. **This benchmark cannot answer "does serverless outperform classic compute?"**
    — that would require a non-serverless warehouse, which this workspace's tier
    doesn't allow. If that comparison matters, it needs a paid-tier workspace.
