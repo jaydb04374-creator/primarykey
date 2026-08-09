@@ -1,0 +1,12 @@
+query,runs,warehouse_size,avg_execution_time_ms,min_execution_time_ms,max_execution_time_ms,avg_data_scanned_bytes,avg_data_scanned_human,avg_rows_read,rows_returned,avg_dbus_consumed_estimated,total_dbus_consumed_estimated_5runs
+q24a,5,2X-Small (Serverless),823.4,522,1704,316019.8,308.6KB,385,0,0.000915,0.004575
+q24b,5,2X-Small (Serverless),593.8,458,683,316020,308.6KB,43,0,0.00066,0.003299
+q34,5,2X-Small (Serverless),1475.2,1168,2270,17287877.8,16.5MB,127039,218,0.001639,0.008195
+q39a,5,2X-Small (Serverless),2183,1785,2721,2209172,2.1MB,378064,206,0.002425,0.012127
+q39b,5,2X-Small (Serverless),1586.8,1431,1690,2209908,2.1MB,378064,10,0.001763,0.008815
+q52,5,2X-Small (Serverless),767,675,904,4316208.6,4.1MB,2103,100,0.000852,0.00426
+q64,5,2X-Small (Serverless),8109.4,7416,8860,228437352.2,217.9MB,7859726,9,0.00901,0.045052
+q72,5,2X-Small (Serverless),3245,2988,3768,86462026.4,82.5MB,11825342,100,0.003606,0.018028
+q82,5,2X-Small (Serverless),1630.2,1351,1972,119141104,113.6MB,255910,4,0.001811,0.009056
+q95,5,2X-Small (Serverless),2124.4,1546,2965,139193172,132.7MB,792448,1,0.00236,0.011802
+q99,5,2X-Small (Serverless),1185.6,885,1529,102739324.8,98.0MB,285857,90,0.001317,0.006586
