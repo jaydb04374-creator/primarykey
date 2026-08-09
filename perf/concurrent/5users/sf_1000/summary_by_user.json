@@ -1,0 +1,47 @@
+[
+  {
+    "user_id": 1,
+    "queries_run": 11,
+    "user_start_s": 1.6,
+    "user_end_s": 3002.61,
+    "user_total_wall_s": 3001.01,
+    "sum_execution_time_ms": 1205291,
+    "sum_queue_time_ms": 113652
+  },
+  {
+    "user_id": 2,
+    "queries_run": 11,
+    "user_start_s": 1.58,
+    "user_end_s": 2974.69,
+    "user_total_wall_s": 2973.11,
+    "sum_execution_time_ms": 1149701,
+    "sum_queue_time_ms": 43980
+  },
+  {
+    "user_id": 3,
+    "queries_run": 11,
+    "user_start_s": 1.55,
+    "user_end_s": 3013.67,
+    "user_total_wall_s": 3012.12,
+    "sum_execution_time_ms": 945114,
+    "sum_queue_time_ms": 407024
+  },
+  {
+    "user_id": 4,
+    "queries_run": 11,
+    "user_start_s": 1.66,
+    "user_end_s": 2954.77,
+    "user_total_wall_s": 2953.11,
+    "sum_execution_time_ms": 1116103,
+    "sum_queue_time_ms": 11014
+  },
+  {
+    "user_id": 5,
+    "queries_run": 11,
+    "user_start_s": 1.57,
+    "user_end_s": 3017.3,
+    "user_total_wall_s": 3015.73,
+    "sum_execution_time_ms": 1164897,
+    "sum_queue_time_ms": 147920
+  }
+]
