@@ -1,0 +1,92 @@
+[
+  {
+    "user_id": 1,
+    "queries_run": 11,
+    "user_start_s": 22.3,
+    "user_end_s": 4047.32,
+    "user_total_wall_s": 4025.02,
+    "sum_execution_time_ms": 1910878,
+    "sum_queue_time_ms": 268467
+  },
+  {
+    "user_id": 2,
+    "queries_run": 11,
+    "user_start_s": 22.31,
+    "user_end_s": 4047.26,
+    "user_total_wall_s": 4024.95,
+    "sum_execution_time_ms": 1905589,
+    "sum_queue_time_ms": 270067
+  },
+  {
+    "user_id": 3,
+    "queries_run": 11,
+    "user_start_s": 22.31,
+    "user_end_s": 4047.25,
+    "user_total_wall_s": 4024.94,
+    "sum_execution_time_ms": 1871455,
+    "sum_queue_time_ms": 273980
+  },
+  {
+    "user_id": 4,
+    "queries_run": 11,
+    "user_start_s": 22.31,
+    "user_end_s": 3966.28,
+    "user_total_wall_s": 3943.97,
+    "sum_execution_time_ms": 2020999,
+    "sum_queue_time_ms": 313063
+  },
+  {
+    "user_id": 5,
+    "queries_run": 11,
+    "user_start_s": 22.2,
+    "user_end_s": 4012.82,
+    "user_total_wall_s": 3990.62,
+    "sum_execution_time_ms": 1888580,
+    "sum_queue_time_ms": 603810
+  },
+  {
+    "user_id": 6,
+    "queries_run": 11,
+    "user_start_s": 22.31,
+    "user_end_s": 3218.18,
+    "user_total_wall_s": 3195.88,
+    "sum_execution_time_ms": 1887434,
+    "sum_queue_time_ms": 249957
+  },
+  {
+    "user_id": 7,
+    "queries_run": 11,
+    "user_start_s": 22.3,
+    "user_end_s": 4047.02,
+    "user_total_wall_s": 4024.72,
+    "sum_execution_time_ms": 1968913,
+    "sum_queue_time_ms": 549919
+  },
+  {
+    "user_id": 8,
+    "queries_run": 11,
+    "user_start_s": 22.3,
+    "user_end_s": 4042.07,
+    "user_total_wall_s": 4019.77,
+    "sum_execution_time_ms": 1952145,
+    "sum_queue_time_ms": 549407
+  },
+  {
+    "user_id": 9,
+    "queries_run": 11,
+    "user_start_s": 22.31,
+    "user_end_s": 4007.51,
+    "user_total_wall_s": 3985.21,
+    "sum_execution_time_ms": 1903169,
+    "sum_queue_time_ms": 582119
+  },
+  {
+    "user_id": 10,
+    "queries_run": 11,
+    "user_start_s": 22.31,
+    "user_end_s": 4013.08,
+    "user_total_wall_s": 3990.77,
+    "sum_execution_time_ms": 1896695,
+    "sum_queue_time_ms": 635481
+  }
+]
