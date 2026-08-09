@@ -1,0 +1,47 @@
+[
+  {
+    "user_id": 1,
+    "queries_run": 11,
+    "user_start_s": 17.23,
+    "user_end_s": 151.94,
+    "user_total_wall_s": 134.71,
+    "sum_execution_time_ms": 78983,
+    "sum_queue_time_ms": 420
+  },
+  {
+    "user_id": 2,
+    "queries_run": 11,
+    "user_start_s": 17.29,
+    "user_end_s": 151.96,
+    "user_total_wall_s": 134.68,
+    "sum_execution_time_ms": 81680,
+    "sum_queue_time_ms": 314
+  },
+  {
+    "user_id": 3,
+    "queries_run": 11,
+    "user_start_s": 17.23,
+    "user_end_s": 150.82,
+    "user_total_wall_s": 133.59,
+    "sum_execution_time_ms": 82327,
+    "sum_queue_time_ms": 443
+  },
+  {
+    "user_id": 4,
+    "queries_run": 11,
+    "user_start_s": 17.23,
+    "user_end_s": 151.5,
+    "user_total_wall_s": 134.27,
+    "sum_execution_time_ms": 75906,
+    "sum_queue_time_ms": 450
+  },
+  {
+    "user_id": 5,
+    "queries_run": 11,
+    "user_start_s": 17.23,
+    "user_end_s": 151.95,
+    "user_total_wall_s": 134.72,
+    "sum_execution_time_ms": 77610,
+    "sum_queue_time_ms": 345
+  }
+]
