@@ -24,10 +24,12 @@ concurrent/
 │   ├── simulate_concurrent_users.py             the simulation script
 │   ├── raw_runs.{csv,json}                      all 55 individual run records
 │   ├── summary.{csv,json}                       per-query stats (incl. queue_time_ms)
-│   └── summary_by_user.{csv,json}               per-user total wall/execution time
+│   ├── summary_by_user.{csv,json}               per-user total wall/execution time
+│   └── sf_1000/                                 same 5-user test, against sf1000 (1TB)
+│       └── (same file layout, + sequential_vs_concurrent_comparison.{csv,json})
 ├── 10users/                                     10 simulated concurrent users, sf1
 │   └── (same file layout as 5users/, 110 individual runs)
-└── 5users_vs_10users_comparison.{csv,json}       sequential vs 5 vs 10 users side-by-side
+└── 5users_vs_10users_comparison.{csv,json}       sequential vs 5 vs 10 users side-by-side (sf1)
 ```
 
 Each `raw_runs.csv`/`.json` holds one row per individual run; `summary.csv`/`.json`
@@ -60,12 +62,14 @@ holds the 5-run averages per query (min/max also included).
   ~1300s) inconsistent with their `execution_time_ms`, most likely polling-subprocess
   overhead on the client side rather than real query behavior. Use `execution_time_ms`
   for all timing analysis, not `wall_clock_s`.
-- **Concurrency test design** (`concurrent/5users/`, `concurrent/10users/`): N Python
-  threads (one per simulated user), each opening its own SQL session against the
-  same warehouse with caching independently disabled, each running the 11-query set
-  once. All threads launched together via a thread pool so query submissions
-  genuinely overlap in time — verified by session-creation and first-query
-  timestamps landing within ~0.06s (5 users) to ~1s (10 users) of each other.
+- **Concurrency test design** (`concurrent/5users/`, `concurrent/10users/`,
+  `concurrent/5users/sf_1000/`): N Python threads (one per simulated user), each
+  opening its own SQL session against the same warehouse with caching independently
+  disabled, each running the 11-query set once. All threads launched together via a
+  thread pool so query submissions genuinely overlap in time — verified by
+  session-creation and first-query timestamps landing within ~0.06s (5 users, sf1)
+  to ~1s (10 users, sf1) of each other; the sf1000 5-user run showed the same tight
+  session-start overlap despite running ~20x longer overall.
 
 ## Results: sf1 (1GB) vs sf1000 (1TB)
 
@@ -205,6 +209,58 @@ requests. Zero failures, zero cache hits, zero disk spill across all 165 concurr
 executions (55 + 110) — the 2X-Small warehouse degrades gracefully under both 5x
 and 10x load rather than failing.
 
+## Results: 5 Concurrent Users on sf1000 (1TB)
+
+The same 5-user concurrency test (`concurrent/5users/sf_1000/`), but against
+`samples.tpcds_sf1000` instead of sf1 — same 2X-Small warehouse, same design (5
+threads, 5 independent SQL sessions, cache disabled, one pass through all 11
+queries per user). This run took **~50.3 minutes total** for all 55 executions —
+dominated by q24a and q24b, which are already the two most expensive queries in
+the set sequentially and got hit hardest by concurrency on top.
+
+| Query | Sequential | 5 Users Concurrent | Slowdown | Avg Queue | Max Queue |
+|---|---|---|---|---|---|
+| q24a | 2.5min | 8.9min | 3.6x | 40ms | 65ms |
+| q24b | 2.1min | 5.3min | 2.5x | **58.0s** | **4.8min** |
+| q34 | 3.47s | 22.57s | **6.5x** | 4.03s | 4.71s |
+| q39a | 2.91s | 12.17s | 4.2x | 26ms | 33ms |
+| q39b | 2.83s | 8.02s | 2.8x | 1.01s | 1.74s |
+| q52 | 1.34s | 3.59s | 2.7x | 24ms | 28ms |
+| q64 | 43.61s | 2.0min | 2.7x | **50.0s** | **1.4min** |
+| q72 | 18.76s | 53.62s | 2.9x | 13.53s | 42.84s |
+| q82 | 6.03s | 16.49s | 2.7x | 10.28s | 21.31s |
+| q95 | 13.63s | 14.06s | **1.0x** | 3.95s | 6.83s |
+| q99 | 8.35s | 16.24s | 1.9x | 3.88s | 7.03s |
+
+### Key finding: data volume triggers real queueing far sooner than user count does
+
+This is a different regime from anything seen at sf1. At sf1, queueing stayed
+near-zero for *both* 5 and 10 concurrent users — contention showed up purely as
+slower execution. At sf1000 with only **5 users**, real queueing appears across
+almost the entire query set: `q64` averaged **50s of queue time** (max 1.4min),
+`q72` averaged 13.5s (max 42.8s), `q82` averaged 10.3s (max 21.3s), and one `q24b`
+run queued for **4.8 minutes**. The lesson: it's the size of the data each query
+touches, not just the number of concurrent users, that pushes a fixed-size
+warehouse from "shares compute thinly" into "requests genuinely wait in line."
+
+Two queries broke the general pattern in opposite directions:
+- **`q34` had the single worst slowdown ratio (6.5x)** despite being a *light*
+  query (3.47s sequential) — sharing the warehouse with 5 heavy concurrent scans
+  seems to have starved it disproportionately relative to its own small footprint.
+- **`q95` was essentially unaffected (1.0x)** — whatever makes its query plan
+  resource-light held up even under this heavier contention, matching its
+  resilience in the sf1 concurrency tests too.
+
+Per-user totals also diverged sharply from the sf1 pattern: each user's 11-query
+run took 945s–1,205s of pure execution time, but ~2,953s–3,018s of wall time —
+a gap dominated by queueing, not client overhead (compare to sf1's 5-user run,
+where wall time was roughly 1.6x execution time, not 2.5–3x). Queueing was also
+distributed *unevenly* across users this time: user 3 accumulated 407s of total
+queue time across their run vs. just 11s for user 4 — unlike the sf1 tests, where
+all users finished within a tight, even window regardless of load level. Despite
+all this, the warehouse still recorded **zero failures, zero cache hits, and zero
+disk spill** — it degrades by making everyone wait longer, never by erroring out.
+
 ## Overall takeaways
 
 1. **Selective predicates matter far more than warehouse size at this scale.**
@@ -219,14 +275,20 @@ and 10x load rather than failing.
    workspace's free-tier compute ceiling didn't block correctness, only made the
    worst-case queries (q24a/q24b) slow.
 4. **A 2X-Small warehouse shares compute under concurrent load, and only starts
-   real queueing once load is high enough.** At 5 concurrent users, every query got
-   2.3x–4.4x slower with essentially zero queue wait — pure compute-sharing. At 10
-   users, slowdowns grew to 2.9x–7.8x and queueing appeared for the first time
-   (up to 1.7s for some queries), but the 5→10 jump itself was sub-linear
-   (mostly 1.0x–1.8x, not 2x) — degradation is graceful, not a cliff. For a real
-   multi-user workload on this warehouse size, expect proportionally worse latency
-   per user as concurrency grows, with queueing becoming a factor only past some
-   user count between 5 and 10 — not request failures.
-5. **This benchmark cannot answer "does serverless outperform classic compute?"**
+   real queueing once load is high enough — and "high enough" depends on data
+   volume, not just user count.** At sf1, 5 concurrent users produced 2.3x–4.4x
+   slowdown with essentially zero queue wait; 10 users grew that to 2.9x–7.8x with
+   queueing just starting to appear (up to 1.7s). At sf1000, just **5** users was
+   enough to produce severe queueing (up to 4.8 minutes for one run) — the same
+   user count that caused almost none at sf1. Query weight, not concurrency count
+   alone, is what determines when a fixed-size warehouse tips from sharing compute
+   into making requests wait.
+5. **Concurrency degradation isn't uniform across queries or users.** Light
+   queries aren't automatically safe under load — `q34` (3.47s sequential) had the
+   worst slowdown ratio of the entire sf1000 concurrency test (6.5x) — while some
+   queries (`q95` at both scales) barely degrade at all. Queueing can also land
+   unevenly across simultaneous users rather than spreading fairly, especially at
+   sf1000 scale.
+6. **This benchmark cannot answer "does serverless outperform classic compute?"**
    — that would require a non-serverless warehouse, which this workspace's tier
    doesn't allow. If that comparison matters, it needs a paid-tier workspace.
